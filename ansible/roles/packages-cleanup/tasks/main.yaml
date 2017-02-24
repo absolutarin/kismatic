@@ -1,6 +1,6 @@
 ---
     # remove YUM packages
-  - name: remove kismatic kubernetes master yum package
+  - name: remove kismatic-kubernetes-master yum package
     yum: name=kismatic-kubernetes-master state=absent
     when: "ansible_os_family == 'RedHat' and 'master' in group_names"
     register: result
@@ -8,7 +8,7 @@
     retries: 1
     delay: 1
 
-  - name: remove kismatic kubernetes node yum package
+  - name: remove kismatic-kubernetes-node yum package
     yum: name=kismatic-kubernetes-node state=absent
     when: "ansible_os_family == 'RedHat' and ('master' in group_names or 'worker' in group_names or 'ingress' in group_names or 'storage' in group_names)"
     register: result
@@ -16,7 +16,7 @@
     retries: 1
     delay: 1
 
-  - name: remove kismatic kubernetes networking yum package
+  - name: remove kismatic-kubernetes-networking yum package
     yum: name=kismatic-kubernetes-networking state=absent
     when: "ansible_os_family == 'RedHat' and ('master' in group_names or 'worker' in group_names or 'ingress' in group_names or 'storage' in group_names)"
     register: result
@@ -25,7 +25,7 @@
     delay: 1
 
     # remove DEB packages
-  - name: remove kubernetes master deb package
+  - name: remove kismatic-kubernetes-master deb package
     apt: name=kismatic-kubernetes-master state=absent
     when: "ansible_os_family == 'Debian' and 'master' in group_names"
     register: result
@@ -33,7 +33,7 @@
     retries: 1
     delay: 1
 
-  - name: remove kubernetes node deb package
+  - name: remove kismatic-kubernetes-node deb package
     apt: name=kismatic-kubernetes-node state=absent
     when: "ansible_os_family == 'Debian' and ('master' in group_names or 'worker' in group_names or 'ingress' in group_names or 'storage' in group_names)"
     register: result
@@ -41,7 +41,7 @@
     retries: 1
     delay: 1
 
-  - name: remove kubernetes networking deb package
+  - name: remove kismatic-kubernetes-networking deb package
     apt: name=kismatic-kubernetes-networking state=absent
     when: "ansible_os_family == 'Debian' and ('master' in group_names or 'worker' in group_names or 'ingress' in group_names or 'storage' in group_names)"
     register: result

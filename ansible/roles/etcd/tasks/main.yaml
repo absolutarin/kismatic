@@ -16,9 +16,25 @@
     command: /bin/true
     notify:
       - restart etcd service
-    when: force_etcd_restart is defined and force_etcd_restart|bool == true
+    when: >
+      (force_etcd_restart is defined and force_etcd_restart|bool == true) or
+      ((etcd_installation_centos is defined and etcd_installation_centos.changed == true or etcd_installation_deb is defined and etcd_installation_deb.changed == true) and upgrading is defined and upgrading|bool == true)
 
   - meta: flush_handlers  #Run handlers
+
+    #TODO don't use a timeout
+  - name: wait for etcd node to be ready after upgrade
+    pause: minutes=1
+    when: >
+      (force_etcd_restart is defined and force_etcd_restart|bool == true) or
+      ((etcd_installation_centos is defined and etcd_installation_centos.changed == true or etcd_installation_deb is defined and etcd_installation_deb.changed == true) and upgrading is defined and upgrading|bool == true)
+
+  - name: verify {{ etcd_install_bin_name }} is running
+    command: systemctl status {{ etcd_service_name }}
+    register: running
+    until: running|success
+    retries: 3
+    delay: 5
 
   # test etcd
   - name: verify {{ etcd_install_bin_name }} cluster health
@@ -27,4 +43,3 @@
     until: result|success
     retries: 3
     delay: 5
-  - debug: msg="{{ bin_dir }}/{{ etcdctl_install_bin_name }} --endpoint='https://127.0.0.1:{{ etcd_service_client_port }}/' --cert-file={{ etcd_certificates_cert_file }} --key-file={{ etcd_certificates_key_file }} --ca-file={{ etcd_certificates_ca_file }} cluster-health"

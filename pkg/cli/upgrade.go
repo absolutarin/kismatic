@@ -125,7 +125,7 @@ func doUpgrade(out io.Writer, opts *upgradeOpts) error {
 	if len(toSkip) > 0 {
 		util.PrintHeader(out, "Skipping nodes", '=')
 		for _, n := range toSkip {
-			util.PrettyPrintOk(out, "- %q is at the target version %q", n.Node.IP, n.Version)
+			util.PrettyPrintOk(out, "- %q is at the target version %q", n.Node.Host, n.Version)
 		}
 		fmt.Fprintln(out)
 	}
@@ -135,7 +135,7 @@ func doUpgrade(out io.Writer, opts *upgradeOpts) error {
 		fmt.Fprintln(out, "All nodes are at the target version. Skipping node upgrades.")
 	} else {
 		if err = upgradeNodes(out, *plan, *opts, toUpgrade, executor); err != nil {
-			return err
+			return fmt.Errorf("Failed to upgrade nodes: %v", err)
 		}
 	}
 
@@ -195,6 +195,23 @@ func upgradeNodes(out io.Writer, plan install.Plan, opts upgradeOpts, toUpgrade 
 		util.PrintHeader(out, "Validating nodes", '=')
 		if err := executor.RunUpgradePreFlightCheck(&plan); err != nil {
 			return fmt.Errorf("Upgrade preflight check failed: %v", err)
+		}
+	}
+
+	// get all etcd nodes
+	var etcdToUpgrade []install.ListableNode
+	for _, n := range install.Subset(toUpgrade, "etcd") {
+		if install.IsOlderThanVersion("3.0.0", n.EtcdVersion) {
+			etcdToUpgrade = append(etcdToUpgrade, n)
+		}
+	}
+	// it's safe to upgrade one node etcd cluster from 2.3 to 3.1
+	// TODO add a check if an upgrade is actually required
+	// it will always be required for this version because all prior ket versions had a etcd2
+	if len(etcdToUpgrade) > 1 {
+		// Run the upgrade on the nodes that need it
+		if err := executor.UpgradeEtcd2Nodes(plan, etcdToUpgrade); err != nil {
+			return fmt.Errorf("Failed to upgrade etcd2 nodes: %v", err)
 		}
 	}
 

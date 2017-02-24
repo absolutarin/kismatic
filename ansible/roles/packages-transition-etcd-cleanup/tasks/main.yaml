@@ -1,0 +1,18 @@
+---
+  # YUM
+  - name: remove transition-etcd yum package
+    yum: name=transition-etcd-{{ transition_etcd_yum_version }} state=absent
+    register: result
+    until: result|success
+    retries: 1
+    delay: 1
+    when: ansible_os_family == 'RedHat'
+
+  # DEB
+  - name: remove transition-etcd deb package
+    apt: name=transition-etcd={{transition_etcd_apt_version}} state=absent
+    register: result
+    until: result|success
+    retries: 1
+    delay: 1
+    when: ansible_os_family == 'Debian'

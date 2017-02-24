@@ -1,0 +1,8 @@
+---
+  - name: remove stale backups at /tmp/etcd_backup
+    file:
+      path: /tmp/etcd_backup
+      state: absent
+
+  - name: save etcd data to /tmp/etcd_backup
+    command: "{{ bin_dir }}/{{ etcdctl_install_bin_name }} --endpoint='https://127.0.0.1:{{ etcd_service_client_port }}/' --cert-file={{ etcd_certificates_cert_file }} --key-file={{ etcd_certificates_key_file }} --ca-file={{ etcd_certificates_ca_file }} backup --data-dir /var/lib/etcd_k8s --backup-dir /tmp/etcd_backup"

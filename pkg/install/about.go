@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/apprenda/kismatic/pkg/ssh"
+	"github.com/apprenda/kismatic/pkg/util"
 )
 
 type KismaticInfo struct {
@@ -28,9 +29,10 @@ type ClusterVersion struct {
 }
 
 type ListableNode struct {
-	Node    Node
-	Roles   []string
-	Version Version
+	Node        Node
+	Roles       []string
+	Version     Version
+	EtcdVersion Version
 }
 
 var AboutKismatic KismaticInfo
@@ -48,10 +50,15 @@ func SetVersion(polyVersion string) {
 
 }
 
-// Returns true if the provided version is older than the current Kismatic version
+// IsOlderVersion returns true if the provided version is older than the current Kismatic version
 func IsOlderVersion(that Version) bool {
 	this := AboutKismatic.ShortVersion
 	return this.isNewerThan(that)
+}
+
+// IsOlderThanVersion returns true of the provided version is older that the minimum version
+func IsOlderThanVersion(minimum string, that Version) bool {
+	return parseVersion(minimum).isNewerThan(that)
 }
 
 // Returns true if that is older than this; this > that
@@ -85,7 +92,8 @@ func ListVersions(plan *Plan) (ClusterVersion, error) {
 	nodes := plan.GetUniqueNodes()
 
 	cv := ClusterVersion{
-		Nodes: []ListableNode{},
+		Nodes:      []ListableNode{},
+		Etcd2Nodes: []ListableNode{},
 	}
 
 	for i, node := range nodes {
@@ -115,7 +123,13 @@ func ListVersions(plan *Plan) (ClusterVersion, error) {
 			}
 		}
 
-		cv.Nodes = append(cv.Nodes, ListableNode{node, plan.GetRolesForIP(node.IP), thisVersion})
+		roles := plan.GetRolesForIP(node.IP)
+		var etcdVersion Version
+		if util.Subset([]string{"etcd"}, roles) {
+			// TODO actually determine the version
+			etcdVersion = Version{Major: 2, Minor: 3, Patch: 7}
+		}
+		cv.Nodes = append(cv.Nodes, ListableNode{node, roles, thisVersion, etcdVersion})
 	}
 
 	cv.IsTransitioning = cv.EarliestVersion != cv.LatestVersion
@@ -125,4 +139,17 @@ func ListVersions(plan *Plan) (ClusterVersion, error) {
 
 func (v Version) String() string {
 	return fmt.Sprintf("%v.%v.%v", v.Major, v.Minor, v.Patch)
+}
+
+// Subset returns a filtered list of ListableNode slice based on the node's roles
+func Subset(nodes []ListableNode, roles ...string) []ListableNode {
+	var subset []ListableNode
+	for _, need := range roles {
+		for _, n := range nodes {
+			if util.Subset([]string{need}, n.Roles) {
+				subset = append(subset, n)
+			}
+		}
+	}
+	return subset
 }

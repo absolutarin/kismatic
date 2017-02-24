@@ -8,6 +8,8 @@
       - group_vars/all.yaml
 
     roles:
+      - etcd-cert etcd_install_dir="/etc/etcd_k8s"
+      - etcd-cert etcd_install_dir="/etc/etcd_networking"
       - kubeconfig
       - kubenode-cert
       - role: docker-registry-container-cert
